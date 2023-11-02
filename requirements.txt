@@ -1,0 +1,16 @@
+setuptools
+transformers
+flake8
+black
+datasets
+accelerate
+bitsandbytes
+wandb
+scipy
+sentencepiece
+evaluate
+pandas
+jupyter
+ipykernel
+setproctitle
+openpyxl
