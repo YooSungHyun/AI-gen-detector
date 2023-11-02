@@ -1,5 +1,3 @@
-NUM_GPU=2
-GPU_IDS="0,1"
 export OMP_NUM_THREADS=8
 export WANDB_PROJECT=""
 export WANDB_ENTITY=""
@@ -9,7 +7,7 @@ export HF_DATASETS_CACHE="./.cache"
 model_name_or_path="EleutherAI/polyglot-ko-12.8b"
 
 CUDA_VISIBLE_DEVICES=$GPU_IDS \
-torchrun --nnodes=1 --nproc_per_node $NUM_GPU train.py \
+deepspeed --include localhost:0,1,2,3 --master_port 61000 train.py \
     --output_dir "outputs/" \
     --model_name_or_path "${model_name_or_path}" \
     --max_length 2048 \

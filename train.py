@@ -64,9 +64,8 @@ def main(model_args: ModelArguments, training_args: MyTrainingArguments):
         args=training_args,
     )
     trainer.train()
-    if training_args.local_rank == 0:
-        model.save_pretrained(training_args.output_dir)
-        tokenizer.save_pretrained(training_args.output_dir)
+    model.save_pretrained(training_args.output_dir)
+    tokenizer.save_pretrained(training_args.output_dir)
 
 
 if __name__ == "__main__":
