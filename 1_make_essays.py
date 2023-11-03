@@ -8,7 +8,6 @@ from tqdm import tqdm
 from functools import partial
 
 
-# test commit
 def make_inst(i, api_config_path):
     max_retries = 3
     retry_delay = 5
