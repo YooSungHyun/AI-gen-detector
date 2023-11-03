@@ -1,3 +1,4 @@
+#!/bin/bash
 NUM_GPU=2
 GPU_IDS="0,1"
 export OMP_NUM_THREADS=8
