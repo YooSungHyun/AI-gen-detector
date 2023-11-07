@@ -90,7 +90,56 @@ Deepfake Text Datasets github: https://github.com/yafuly/DeepfakeTextDetect
 
 데이터 노이즈 중 문법이 틀린 경우 detect 해주는 코드: https://www.kaggle.com/code/defdet/grammar-correction-detect-ai
 
+<2페이지>
+
+LLMDet: Third Party LLM generated text detection Tool 
+    gitub: https://github.com/TrustedLLM/LLMDet#-llmdeta-third-party-large-language-models-generated-text-detection-tool--paper
+    paper: https://arxiv.org/abs/2305.15004
+
+DetectGPT medium post: https://medium.com/@TheHaseebHassan/detectgpt-detecting-ai-generated-text-a0284f1d05de
+
+Defending Against Neural Fake News by Allen Institute(University of Washington)
+    paper: https://dl.acm.org/doi/pdf/10.5555/3454287.3455099
+    간단 설명: 가짜뉴스 판별기
+
+GLTR: Statistical Detection and Visualization of Generated Text
+    paper: https://aclanthology.org/P19-3019.pdf
+
+BERTology Meets Biology: Interpreting Attention in Protein Language Models
+    간단 설명: attention 원리를 이해하기 위해 language model에 단백질 구조를 훈련시켜 biological data에서 ai-generated text의 흔적들을 찾은 논문
+
+Here are the roc_auc scores for each of the generated datasets/models that were shared:
+
+discussion에 공개된 데이터들을 통해서 훈련한 모델들의 roc-auc 점수들
+    chat_gpt_moth: 1.0
+    falcon_180b_v1: 1.0
+    radek_500: 1.0
+    llammistral7binstruct: 0.9999401125883339
+    llama2_chat: 0.9999701795192938
+    llama_70b_v1: 0.9996283909327388
+    학습 데이터: DAIGT Proper Train Dataset
+
+출처: https://www.kaggle.com/competitions/llm-detect-ai-generated-text/discussion/452536
 
 
+chatgpt 에게 에세이 쓰라고 하는 프롬프트가 정리된 노트북: https://www.kaggle.com/code/mozattt/daigt-script-example-to-generate-ai-essay
 
+출처: https://www.kaggle.com/code/mozattt/daigt-script-example-to-generate-ai-essay
+
+SeqXGPT: Sentence-Level AI-Generated Text Detection
+    document level detection. 
+
+Can AI-Generated Text be Reliabily Detected?
+    paper link:  https://arxiv.org/pdf/2303.11156.pdf
+    code: https://github.com/vinusankars/Reliability-of-AI-text-detectors
+
+The Science of Detecting LLM-Generated Texts
+    paper link: https://arxiv.org/pdf/2303.07205.pdf
+
+The Imitation Game: Detecting Human and AI-Generated Texts in the Era of Large Language Models
+    paper: https://arxiv.org/pdf/2307.12166.pdf
+    dataset link inside of the paper:  https://github.com/sakibsh/LLM
+
+Detecting ChatGPT: A Survey of the State of Detecting ChatGPT-Generated Text
+    paper: https://arxiv.org/pdf/2309.07689.pdf
 
