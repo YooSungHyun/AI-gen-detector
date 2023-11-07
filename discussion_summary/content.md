@@ -10,7 +10,8 @@
 (번외)
 대회의 공식적인 디스코드 채널:  discord.gg/kaggle 
 저 채널 주소는 캐글 공식 디스코드 채널인데, 해당 대회는  public 안에서 찾아서 따로 그 안에서 관련 대회들 얘기를 할 수 있는 형태로 구성되어 있다고 하니 참고하면 될 거 같다. 
-
+-------------------------------------------------------------------------------------------------------------------------------------------
+### Open Discussion
 LLM-generated-text-detection github link: https://github.com/NLP2CT/LLM-generated-Text-Detection
 출처: https://www.kaggle.com/competitions/llm-detect-ai-generated-text/discussion/453481
 
