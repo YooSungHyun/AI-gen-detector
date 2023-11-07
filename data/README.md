@@ -1,0 +1,13 @@
+# datasets list
+## 00.[LLM Generated Essays for the Detect AI Comp!](https://www.kaggle.com/datasets/radek1/llm-generated-essays)
+## 01.[LLM 7 prompt training dataset](https://www.kaggle.com/datasets/carlmcbrideellis/llm-7-prompt-training-dataset)
+## 02.[Hello, Claude! 1000 essays from Anthropic...](https://www.kaggle.com/datasets/darraghdog/hello-claude-1000-essays-from-anthropic)
+## 03.[DAIGT Proper Train Dataset](https://www.kaggle.com/datasets/thedrcat/daigt-proper-train-dataset)
+## 04.[DAIGT External Train Dataset](https://www.kaggle.com/datasets/thedrcat/daigt-external-train-dataset)
+## 05.[ArguGPT](https://www.kaggle.com/datasets/alejopaullier/argugpt)
+## 06.[persuade corpus 2.0](https://www.kaggle.com/datasets/nbroad/persaude-corpus-2)
+## 07.[DeepFake_Text_Datasets](https://www.kaggle.com/datasets/myncoder0908/deepfake-text-datasets)
+## 08.[daigt data - llama 70b and falcon180b](https://www.kaggle.com/datasets/nbroad/daigt-data-llama-70b-and-falcon180b)
+## 09.[LLMs-data](https://github.com/sakibsh/LLM/tree/main)
+## 10.[IELTS Writing Scored Essays Dataset](https://www.kaggle.com/datasets/mazlumi/ielts-writing-scored-essays-dataset)
+## 11.[2k+ ChatGPT4 Questions](https://www.kaggle.com/datasets/hunter0007/2k-chatgpt4-questions)
