@@ -165,3 +165,4 @@ models/
 model/
 DeepSpeed/
 configs/openai_api_config.json
+data/
