@@ -33,7 +33,7 @@ def main(model_args: ModelArguments, datasets_args: DatasetsArguments, training_
     model = AutoModelForSequenceClassification.from_pretrained(model_args.model_name_or_path)
 
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, use_fast=True)
-    print(tokenizer.model_max_length)
+    print("@@@@@ Model Max Length:", tokenizer.model_max_length)
     model.config.num_labels = 2
 
     train_datasets = load_from_disk(datasets_args.train_datasets_path)
@@ -71,6 +71,7 @@ def main(model_args: ModelArguments, datasets_args: DatasetsArguments, training_
     eval_datasets = eval_datasets.map(preprocess, remove_columns=eval_datasets.column_names)
     eval_datasets = filter_and_min_sample(eval_datasets, tokenizer.model_max_length)
 
+    # @@@@@ Train Datasets: 17482 	 @@@@@ Eval Datasets: 4344
     print("@@@@@ Train Datasets:", len(train_datasets), "\t", "@@@@@ Eval Datasets:", len(eval_datasets))
 
     # [NOTE]: load metrics & set Trainer arguments
