@@ -71,6 +71,8 @@ def main(model_args: ModelArguments, datasets_args: DatasetsArguments, training_
     eval_datasets = eval_datasets.map(preprocess, remove_columns=eval_datasets.column_names)
     eval_datasets = filter_and_min_sample(eval_datasets, tokenizer.model_max_length)
 
+    print("@@@@@ Train Datasets:", len(train_datasets), "\t", "@@@@@ Eval Datasets:", len(eval_datasets))
+
     # [NOTE]: load metrics & set Trainer arguments
     roc_auc = load("evaluate-metric/roc_auc")
 
