@@ -1,108 +1,78 @@
 # for type annotation
+import logging
+import os
 from argparse import Namespace
 from typing import Any, Dict
 
 import numpy as np
-from datasets import Dataset, concatenate_datasets, load_dataset
+import torch._dynamo
+from arguments import ModelArguments, MyTrainingArguments, DatasetsArguments
+from datasets import Dataset, concatenate_datasets, load_from_disk
 from evaluate import load
 from setproctitle import setproctitle
 from transformers import (
-    DataCollatorWithPadding,
-    HfArgumentParser,
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    DataCollatorWithPadding,
+    HfArgumentParser,
     Trainer,
-    TrainingArguments,
     set_seed,
 )
-from transformers.trainer_utils import EvalPrediction
-from utils import clean_unicode, trim_text
+from transformers.trainer_utils import EvalPrediction, is_main_process
 
-PASSAGE_QUESTION_TOKEN = "[SEP]"
+os.environ["TORCHDYNAMO_DISABLE"] = "1"
+torch._dynamo.config.verbose = True
+SEP_TOKEN = "[SEP]"
 
 
-def main(parser: HfArgumentParser) -> None:
-    train_args, _ = parser.parse_args_into_dataclasses(return_remaining_strings=True)
-    setproctitle("bart-answerable")
-    set_seed(train_args.seed)
+# 학습 시작 전에, 꼭 data_preprocess.ipynb 확인 후 진행할 것
+def main(model_args: ModelArguments, datasets_args: DatasetsArguments, training_args: MyTrainingArguments):
+    setproctitle(training_args.task)
+    set_seed(training_args.seed)
 
-    # model_name_or_path = "klue/roberta-large"
-    model_name_or_path = "monologg/kobigbird-bert-base"
-    model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, attention_type="original_full")
-    # model_name_or_path = "./model/xlm-roberta-longformer-large-16384"
+    model = AutoModelForSequenceClassification.from_pretrained(model_args.model_name_or_path)
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=True)
-    # model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, use_fast=True)
+    print(tokenizer.model_max_length)
     model.config.num_labels = 2
 
-    klue_datasets = load_dataset("klue", "mrc")
-    raw_train_datasets = load_dataset("json", data_files="./data/train/train_data.json", split="all")
-    raw_valid_datasets = load_dataset("json", data_files="./data/validation/valid_data.json", split="all")
+    train_datasets = load_from_disk(datasets_args.train_datasets_path)
+    eval_datasets = load_from_disk(datasets_args.eval_datasets_path)
 
+    # SEP Token 합쳐서 학습해볼것(concat)
     def preprocess(raw):
-        input_text = raw["question"] + PASSAGE_QUESTION_TOKEN + raw["title"] + PASSAGE_QUESTION_TOKEN + raw["context"]
+        input_text = raw["text"]
         tokenized_text = tokenizer(input_text, return_token_type_ids=False, return_tensors="pt")
+        # tokenized_text = tokenizer(input_text, return_tensors="pt")
         raw["input_ids"] = tokenized_text["input_ids"][0]
         raw["attention_mask"] = tokenized_text["attention_mask"][0]
-        raw["labels"] = int(raw["is_impossible"])
+        raw["labels"] = int(raw["generated"])
 
         return raw
 
-    def filter_and_min_sample(
-        datasets: Dataset, max_length: int = 512, is_split_all: bool = False, min_sample_count: dict[str, int] = None
-    ):
+    def filter_and_min_sample(datasets: Dataset, max_length: int = 512, min_sample_count: int = 0):
         datasets = datasets.filter(lambda x: len(x["input_ids"]) <= max_length)
         true_datasets = datasets.filter(lambda x: x["labels"] == 1)
         false_datasets = datasets.filter(lambda x: x["labels"] == 0)
-        result_dict = dict()
-        if is_split_all:
-            if min_sample_count:
-                sampling_count = min(len(true_datasets), len(false_datasets), min_sample_count["all"])
-            else:
-                sampling_count = min(len(true_datasets), len(false_datasets))
-            sampling_true = Dataset.from_dict(true_datasets.shuffle()[:sampling_count])
-            sampling_false = Dataset.from_dict(false_datasets.shuffle()[:sampling_count])
-            result_dict["all"] = concatenate_datasets([sampling_true, sampling_false])
-            assert len(result_dict["all"]) % 2 == 0, "`split=all` sampling error check plz"
-        else:
-            for datasets_split_name in datasets.keys():
-                if min_sample_count and datasets_split_name in min_sample_count.keys():
-                    sampling_count = min(
-                        len(true_datasets[datasets_split_name]),
-                        len(false_datasets[datasets_split_name]),
-                        min_sample_count[datasets_split_name],
-                    )
-                else:
-                    sampling_count = min(
-                        len(true_datasets[datasets_split_name]), len(false_datasets[datasets_split_name])
-                    )
-                sampling_true = Dataset.from_dict(true_datasets[datasets_split_name].shuffle()[:sampling_count])
-                sampling_false = Dataset.from_dict(false_datasets[datasets_split_name].shuffle()[:sampling_count])
-                result_dict[datasets_split_name] = concatenate_datasets([sampling_true, sampling_false])
-                assert (
-                    len(result_dict[datasets_split_name]) % 2 == 0
-                ), f"`split={datasets_split_name}` sampling error check plz"
-        return result_dict
 
-    klue_datasets = klue_datasets.map(preprocess, remove_columns=klue_datasets["train"].column_names)
-    raw_train_datasets = raw_train_datasets.map(preprocess, remove_columns=raw_train_datasets.column_names)
-    raw_valid_datasets = raw_valid_datasets.map(preprocess, remove_columns=raw_valid_datasets.column_names)
-    # Klue에서 True 500개, False 500개 1000개 샘플링 (valid는 10000개로 하기 위함)
-    # Evaluation에서 GPU 메모리가 터지고, 학습이 너무 느려서 추가 처리 진행
-    klue_result = filter_and_min_sample(
-        klue_datasets, tokenizer.model_max_length, is_split_all=False, min_sample_count={"validation": 500}
-    )
-    # 4050?? BigBirdEncoder
-    raw_train_result = filter_and_min_sample(raw_train_datasets, tokenizer.model_max_length, is_split_all=True)
-    # 공개 데이터셋에서 True 4500, False 4500 9000개 샘플링 (valid는 10000개로 하기 위함)
-    raw_valid_result = filter_and_min_sample(
-        raw_valid_datasets, tokenizer.model_max_length, is_split_all=True, min_sample_count={"all": 4500}
-    )
-    train_datasets = concatenate_datasets([klue_result["train"], raw_train_result["all"]]).shuffle()
-    eval_datasets = concatenate_datasets([klue_result["validation"], raw_valid_result["all"]]).shuffle()
+        if min_sample_count:
+            sampling_count = min(len(true_datasets), len(false_datasets), min_sample_count)
+        else:
+            sampling_count = min(len(true_datasets), len(false_datasets))
+
+        sampling_true = Dataset.from_dict(true_datasets.shuffle()[:sampling_count])
+        sampling_false = Dataset.from_dict(false_datasets.shuffle()[:sampling_count])
+        filter_sampled_dataset = concatenate_datasets([sampling_true, sampling_false])
+        assert len(filter_sampled_dataset) % 2 == 0, "`split=all` sampling error check plz"
+        return filter_sampled_dataset
+
+    train_datasets = train_datasets.map(preprocess, remove_columns=train_datasets.column_names)
+    train_datasets = filter_and_min_sample(train_datasets, tokenizer.model_max_length)
+    eval_datasets = eval_datasets.map(preprocess, remove_columns=eval_datasets.column_names)
+    eval_datasets = filter_and_min_sample(eval_datasets, tokenizer.model_max_length)
 
     # [NOTE]: load metrics & set Trainer arguments
-    accuracy = load("evaluate-metric/accuracy")
+    roc_auc = load("evaluate-metric/roc_auc")
 
     def metrics(evaluation_result: EvalPrediction) -> Dict[str, float]:
         """_metrics_
@@ -125,9 +95,9 @@ def main(parser: HfArgumentParser) -> None:
 
         predictions = np.argmax(predictions, axis=-1)
 
-        accuracy_result = accuracy._compute(predictions=predictions, references=references)
+        accuracy_result = roc_auc.compute(prediction_scores=predictions, references=references)
 
-        metrics_result["accuracy"] = accuracy_result["accuracy"]
+        metrics_result["roc_auc"] = accuracy_result["roc_auc"]
         return metrics_result
 
     collator = DataCollatorWithPadding(tokenizer=tokenizer, padding="longest")
@@ -137,15 +107,15 @@ def main(parser: HfArgumentParser) -> None:
         tokenizer=tokenizer,
         train_dataset=train_datasets,
         eval_dataset=eval_datasets,
-        args=train_args,
+        args=training_args,
         compute_metrics=metrics,
         data_collator=collator,
     )
 
     # [NOTE]: run train, eval, predict
-    if train_args.do_train:
-        train(trainer, train_args)
-    if train_args.do_eval:
+    if training_args.do_train:
+        train(trainer, training_args)
+    if training_args.do_eval:
         eval(trainer, eval_datasets)
 
 
@@ -182,7 +152,12 @@ def eval(trainer: Trainer, eval_data: Dataset) -> None:
     trainer.evaluate(eval_data)
 
 
-if "__main__" in __name__:
-    parser = HfArgumentParser([TrainingArguments])
-
-    main(parser)
+if __name__ == "__main__":
+    parser = HfArgumentParser((ModelArguments, DatasetsArguments, MyTrainingArguments))
+    model_args, datasets_args, training_args = parser.parse_args_into_dataclasses()
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        level=logging.INFO if is_main_process(training_args.local_rank) else logging.WARN,
+    )
+    main(model_args=model_args, datasets_args=datasets_args, training_args=training_args)
