@@ -16,3 +16,4 @@ setproctitle
 openpyxl
 openai
 simple-parsing
+scikit-learn
